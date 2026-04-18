@@ -31,12 +31,6 @@ A full-stack, single-page e-commerce application (similar to a food/retail porta
 - **Cart & Orders** — Add to cart, checkout, view order history, re-order shortcut
 - **Product Combos / Add-ons** — Products can have optional add-on items and combo bundles
 
-#### WOW #1 — AI Smart Product Description (LangChain + Gemini)
-**What it looks like in a demo:** Admin types a short product title (e.g. "Spicy Chicken Burger") and clicks **"✨ Generate Description"**. Within 2 seconds a rich, engaging product description, suggested tax percentage, and a list of recommended add-on items appear — auto-filled into the form.
-
-**Why it is low-complexity:** Inngest's `inngest.createFunction` listens for a `stock/updated` event. When stock drops below a threshold, it logs (or sends) an alert. No cron, no queues to manage manually. ~20 lines of Inngest function code.
-
----
 
 ## 2. Tech Stack & Strict Rules
 
@@ -97,85 +91,7 @@ VITE_API_BASE_URL=http://localhost:5000/api
 
 ---
 
-## 3. AI Agent Coding Constraints
 
-> **The AI coding assistant MUST follow every rule in this section without exception.**
-
-### RULE 1 — Beginner-Friendly Codebase (CRITICAL)
-- Every file must be readable by a developer who only knows basic MERN.
-- No advanced patterns: no decorators, no factory functions, no higher-order components unless absolutely required.
-- If a function is longer than ~40 lines, split it into two smaller functions with clear names.
-
-### RULE 2 — Heavy Commenting (MANDATORY)
-- Every Express route handler must have a comment block above it explaining: **what** the route does, **who** can call it (role), and **what** it returns.
-- Every React component must have a comment at the top explaining what it renders and what props it receives.
-- Every Mongoose model must have a comment on each field explaining what it stores.
-- Every Zustand store action must have a comment explaining what state it changes.
-
-**Comment format for backend routes:**
-```js
-/**
- * @route   POST /api/auth/login
- * @desc    Logs in a user. Sets access + refresh token cookies on success.
- * @access  Public
- */
-```
-
-**Comment format for React components:**
-```jsx
-/**
- * ProductCard Component
- * Renders a single product tile with image, name, price, and an "Add to Cart" button.
- * Props: { product: Object }
- */
-```
-
-### RULE 3 — Simplicity Over Cleverness (CRITICAL)
-- Write flat, explicit code. Avoid chaining more than 2 `.then()` calls.
-- Use `async/await` everywhere — no raw Promise chains.
-- Do not create generic utility wrappers unless the same code is copy-pasted 3+ times.
-- Keep controllers thin: one controller file per resource (authController, productController, etc.).
-- Do NOT abstract the error handler beyond a simple `try/catch` with `res.status(500).json(...)`.
-
-### RULE 4 — Demo-Driven Focus for Wow Features
-- The LangChain prompt for `generate-product-details` must request structured JSON output and include a JSON format example inside the prompt string so Gemini reliably returns parseable data.
-- Wrap the LangChain call in a `try/catch`. If it fails, return a helpful error message rather than crashing the server.
-- The Inngest function for low-stock alerts must `console.log` the alert clearly so it is visible in the terminal during a live demo.
-
-### RULE 5 — Error Handling Standard
-- All Express route errors must be caught in `try/catch`.
-- Success response shape: `{ success: true, data: <payload>, message: "..." }`
-- Error response shape: `{ success: false, message: "Human-readable error", code: "ERROR_CODE" }`
-- Always use correct HTTP status codes: 200, 201, 400, 401, 403, 404, 500.
-
-### RULE 6 — Implementation Phases (Build in This Order)
-
-#### Phase 1 — Database Models & Server Bootstrap
-- Set up Express server, connect MongoDB, define all Mongoose models.
-- Configure Cloudinary, Multer, cookie-parser, cors.
-- Set up Inngest client and local dev server.
-
-#### Phase 2 — Authentication & Role Middleware
-- Build `authController` (register, login, logout, refreshToken).
-- Build `authMiddleware` (verifyToken) and `roleMiddleware` (requireAdmin).
-- Test all auth routes in Postman. Export collection.
-
-#### Phase 3 — Core API (Categories, Products, Stock, Orders)
-- Build all CRUD routes for categories and products (with Cloudinary upload).
-- Build stock update route + Inngest event emit.
-- Build cart and order routes.
-
-#### Phase 4 — AI Feature
-- Build `/api/ai/generate-product-details` route using LangChain + Gemini.
-- Test the prompt with 5 different product names to ensure stable JSON output.
-
-#### Phase 5 — Frontend (Pages & Components)
-- Build all pages in order: Auth → Admin Dashboard → Home → Product Detail → Cart → Orders.
-- Wire Zustand stores to API calls using axios.
-- Add lazy loading ("Load More") for product listings.
-- Add fuzzy search using simple client-side filter on fetched data.
-
----
 
 ## 4. Folder Structure
 
@@ -688,68 +604,5 @@ flowchart TD
     style AK fill:#60a5fa,color:#000
 ```
 
----
-
-### Admin Flow — AI-Powered Product Creation
-
-```mermaid
-flowchart TD
-    A([Admin navigates to /admin/products/new]) --> B[Render ProductForm.jsx]
-    B --> C{Admin types product title}
-    C --> D[Admin clicks ✨ Generate Description]
-    D --> E[POST /api/ai/generate-product-details]
-    E --> F{authMiddleware + requireAdmin}
-    F -->|Fail| G[403 Forbidden]
-    F -->|Pass| H[aiController.generateProductDetails]
-    H --> I[LangChain ChatGoogleGenerativeAI]
-    I --> J[Gemini API: returns JSON with description + taxPercent + suggestedAddOns]
-    J --> K[Parse JSON response]
-    K --> L[Return data to frontend]
-    L --> M[Auto-fill form fields: description, taxPercent, addOns]
-    M --> N{Admin uploads image + fills remaining fields}
-    N --> O[POST /api/products with FormData]
-    O --> P[uploadMiddleware: Multer reads file buffer]
-    P --> Q[Upload buffer to Cloudinary → get URL]
-    Q --> R[productController.create saves Product to MongoDB]
-    R --> S[Return new product]
-    S --> T[Navigate to /admin/products with success toast]
-
-    style A fill:#a78bfa,color:#000
-    style G fill:#f87171,color:#000
-    style T fill:#4ade80,color:#000
-```
-
----
-
-### Admin Flow — Stock Update + Inngest Alert
-
-```mermaid
-flowchart TD
-    A([Admin on /admin/stock]) --> B[StockManager fetches all products]
-    B --> C[GET /api/products]
-    C --> D[Render StockRow for each product]
-    D --> E{Admin changes stock number + clicks Save}
-    E --> F[PUT /api/stock/:productId]
-    F --> G[authMiddleware + requireAdmin]
-    G --> H[stockController.updateStock]
-    H --> I[Save new stock on Product document]
-    I --> J[Create StockHistory record]
-    J --> K[Emit Inngest event: stock/updated with productId + newStock]
-    K --> L[Return updated product + history to frontend]
-    L --> M[StockRow updates with new value + success toast]
-
-    K --> N[Inngest Server receives event]
-    N --> O{newStock < LOW_STOCK_THRESHOLD=5?}
-    O -->|No| P[Function completes silently]
-    O -->|Yes| Q[lowStockAlert function runs]
-    Q --> R[console.log: LOW STOCK ALERT for product name]
-    R --> S[In production: send email via nodemailer]
-
-    style A fill:#fbbf24,color:#000
-    style Q fill:#f97316,color:#000
-    style P fill:#d1d5db,color:#000
-```
-
----
 
 *End of LLD — `project_spec.md`*
