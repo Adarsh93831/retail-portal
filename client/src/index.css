@@ -1,0 +1,54 @@
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --page-bg: #fffaf3;
+  --panel-bg: #fffdf9;
+  --ink: #2e2008;
+  --ink-soft: #5f4b2c;
+  --accent: #f18f01;
+  --accent-dark: #9f5803;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "IBM Plex Sans", sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 10% 20%, rgba(255, 211, 145, 0.4), transparent 36%),
+    radial-gradient(circle at 90% 0%, rgba(255, 173, 47, 0.25), transparent 28%),
+    linear-gradient(160deg, #fff8ec 0%, #fffdf7 45%, #fff6e7 100%);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "Outfit", sans-serif;
+  letter-spacing: -0.01em;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.glass-panel {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(255, 252, 246, 0.92));
+  border: 1px solid rgba(159, 88, 3, 0.12);
+  box-shadow: 0 18px 60px -28px rgba(159, 88, 3, 0.35);
+  border-radius: 1.25rem;
+}
+
+.hero-gradient {
+  background: linear-gradient(120deg, #fff2d8 0%, #ffe0b0 45%, #ffd08a 100%);
+}
